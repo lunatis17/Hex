@@ -162,10 +162,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   HexSample: {fileID: 3614979062688057964, guid: 098b6adf96506af438a37c16c6ef5d44,
     type: 3}
+  BombSample: {fileID: 0}
+  PivotSample: {fileID: 8384900265686613664, guid: cf2e486763794fb4598b44440c2f614b,
+    type: 3}
   XOffset: 3
   YOffset: 3.5
   XTile: 8
   YTile: 9
+  activePivot: {fileID: 0}
 --- !u!20 &519420031
 Camera:
   m_ObjectHideFlags: 0
@@ -236,11 +240,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   colors:
-  - {r: 1, g: 1, b: 1, a: 1}
+  - {r: 1, g: 0, b: 1, a: 1}
   - {r: 1, g: 0, b: 0, a: 1}
   - {r: 0, g: 1, b: 0, a: 1}
   - {r: 0, g: 0, b: 1, a: 1}
   - {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  move: 0
   point: 0
   hexTiles: 0
   bombs: 0
+  onMove: 0

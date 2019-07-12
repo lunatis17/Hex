@@ -65,6 +65,8 @@
     <Compile Include="Assets\Scripts\Core.cs" />
     <Compile Include="Assets\Scripts\GridSystem.cs" />
     <Compile Include="Assets\Scripts\Hex.cs" />
+    <Compile Include="Assets\Scripts\HexBomb.cs" />
+    <Compile Include="Assets\Scripts\Pivot.cs" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>C:/Hex/Hex/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
     </Reference>
