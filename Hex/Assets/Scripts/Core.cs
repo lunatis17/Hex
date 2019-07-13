@@ -19,7 +19,7 @@ public class Core : MonoBehaviour
     public int point = 0;
     public int hexTiles = 0;
     public int bombs = 0;
-
+    
     public bool onMove = true;
 
     Vector2 clickPos;
@@ -74,26 +74,28 @@ public class Core : MonoBehaviour
             // Döndürme olayı gerçekleşecekse bunun sağa mı yoksa sola mı olacağını belirliyoruz.
             if (gridSystem.activePivot != null)
             {
-                if (clickPos.y > gridSystem.activePivot.transform.position.y)
+                onMove = true; // Hareket başladı.
+
+                if (clickPos.y > gridSystem.activePivot.transform.position.y) // Sadece kaydırma yönü değil, üstünden veya altından kaydırmak da dönüş yönünü etkileyecek.
                 {
                     if (clickPos.x - mousePos.x < 0)
                     {
-                        gridSystem.TurnRight();
+                        StartCoroutine(gridSystem.TurnRight());
                     }
                     else
                     {
-                        gridSystem.TurnLeft();
+                        StartCoroutine(gridSystem.TurnLeft());
                     }
                 }
                 else
                 {
                     if (clickPos.x - mousePos.x > 0)
                     {
-                        gridSystem.TurnRight();
+                        StartCoroutine(gridSystem.TurnRight());
                     }
                     else
                     {
-                        gridSystem.TurnLeft();
+                        StartCoroutine(gridSystem.TurnLeft());
                     }
                 }
             }
@@ -103,8 +105,10 @@ public class Core : MonoBehaviour
 
 public interface IHex // Tüm Hexagon class'larında kullanılacak olan Interface
 {
+    bool isBomb { get; set; }
     int color { get; set; }
     Vector2 location { get; set; }
-    void Create(int hexColor, Vector2 hexPos);
+    Vector2Int index { get; set; }
+    void Create(bool hexBomb, int hexColor, Vector2 hexPos, Vector2Int hexIndex);
     void Break();
 }

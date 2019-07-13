@@ -50,7 +50,7 @@ public class GridSystem : MonoBehaviour
     void Build() // Desenin oluşturulduğu metot.
     {
         // Önce altıgen hücrelerimizi oluşturuyoruz.
-        StartCoroutine(FillHexDelayed());
+        StartCoroutine(FillHexDelayed()); // Bu metodu daha sonra kırılan hücrelerin yerlerini doldurmak için de kullanacağız.
 
         // Sonra pivotlarımızı yerleştiriyoruz.
         CreatePivots();
@@ -75,57 +75,185 @@ public class GridSystem : MonoBehaviour
     public void SelectPivot(GameObject pivot)
     {
         activePivot = pivot;
-
-        Debug.Log("Pivot 0: " + pivot.GetComponent<Pivot>().linkedHexagons[0]);
-        Debug.Log("Pivot 1: " + pivot.GetComponent<Pivot>().linkedHexagons[1]);
-        Debug.Log("Pivot 2: " + pivot.GetComponent<Pivot>().linkedHexagons[2]);
-        Debug.Log("Vector: " + pivot.GetComponent<Pivot>().pivotVector);
     }
 
-    public void TurnLeft()
+    public List<Vector2Int> CheckHex(Vector2Int[] index)
     {
-        Debug.Log("Turn Left");
+        List<Vector2Int> hexToBreak = new List<Vector2Int>();
 
-        Pivot pivot = activePivot.GetComponent<Pivot>();
-        Vector2 b = grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x].GetComponent<IHex>().location;
-        Vector2 c = grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x].GetComponent<IHex>().location;
-        Vector2 a = grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x].GetComponent<IHex>().location;
+        foreach (Vector2Int i in index)
+        {
+            Vector2Int[] vectors = new Vector2Int[6];
+            if (i.x % 2 == 0)
+            {
+                vectors[0] = new Vector2Int(i.x - 1, i.y);
+                vectors[1] = new Vector2Int(i.x, i.y + 1);
+                vectors[2] = new Vector2Int(i.x + 1, i.y);
+                vectors[3] = new Vector2Int(i.x + 1, i.y - 1);
+                vectors[4] = new Vector2Int(i.x, i.y - 1);
+                vectors[5] = new Vector2Int(i.x - 1, i.y - 1);
+            }
+            else
+            {
+                vectors[0] = new Vector2Int(i.x - 1, i.y + 1);
+                vectors[1] = new Vector2Int(i.x, i.y + 1);
+                vectors[2] = new Vector2Int(i.x + 1, i.y + 1);
+                vectors[3] = new Vector2Int(i.x + 1, i.y);
+                vectors[4] = new Vector2Int(i.x, i.y - 1);
+                vectors[5] = new Vector2Int(i.x - 1, i.y);
+            }
 
-        grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x].GetComponent<IHex>().location = a;
-        grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x].GetComponent<IHex>().location = b;
-        grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x].GetComponent<IHex>().location = c;
+            List<GameObject> matches = new List<GameObject>();
 
-        GameObject[] hex = new GameObject[3];
-        hex[2] = grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x];
-        hex[1] = grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x];
-        hex[0] = grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x];
-
-        grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x] = hex[0];
-        grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x] = hex[2];
-        grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x] = hex[1];
+            for (int v = 0; v < 5; v++)
+            {
+                try
+                {
+                    if (v == 0)
+                    {
+                        if (grid[i.y, i.x].GetComponent<IHex>().color == grid[vectors[5].y, vectors[5].x].GetComponent<IHex>().color)
+                        {
+                            matches.Add(grid[vectors[5].y, vectors[5].x]);
+                        }
+                    }
+                    
+                    if (grid[i.y, i.x].GetComponent<IHex>().color == grid[vectors[v].y, vectors[v].x].GetComponent<IHex>().color)
+                    {
+                        matches.Add(grid[vectors[v].y, vectors[v].x]);
+                    }
+                    else
+                    {
+                        if (matches.Count > 1)
+                        {
+                            matches.Add(grid[i.y, i.x]);
+                            foreach (GameObject match in matches)
+                            {
+                                if(!hexToBreak.Exists(x => x == match.GetComponent<IHex>().index))
+                                    hexToBreak.Add(match.GetComponent<IHex>().index);
+                            }
+                            matches.Clear();
+                            //break;
+                        }
+                        else
+                        {
+                            matches.Clear();
+                        }
+                    }
+                }
+                catch
+                {
+                    if (matches.Count > 1)
+                    {
+                        matches.Add(grid[i.y, i.x]);
+                        foreach (GameObject match in matches)
+                        {
+                            if (!hexToBreak.Exists(x => x == match.GetComponent<IHex>().index))
+                                hexToBreak.Add(match.GetComponent<IHex>().index);
+                        }
+                        matches.Clear();
+                        //break;
+                    }
+                    else
+                    {
+                        matches.Clear();
+                    }
+                }
+                
+            }
+        }
+        return hexToBreak;
     }
 
-    public void TurnRight()
+    public IEnumerator TurnLeft()
     {
-        Debug.Log("Turn Right");
 
-        Pivot p = activePivot.GetComponent<Pivot>();
-        Vector2 c = grid[p.linkedHexagons[0].y, p.linkedHexagons[0].x].GetComponent<IHex>().location;
-        Vector2 a = grid[p.linkedHexagons[1].y, p.linkedHexagons[1].x].GetComponent<IHex>().location;
-        Vector2 b = grid[p.linkedHexagons[2].y, p.linkedHexagons[2].x].GetComponent<IHex>().location;
+        for (int i = 0; i <= 2; i++)
+        {
+            Pivot pivot = activePivot.GetComponent<Pivot>();
 
-        grid[p.linkedHexagons[0].y, p.linkedHexagons[0].x].GetComponent<IHex>().location = a;
-        grid[p.linkedHexagons[1].y, p.linkedHexagons[1].x].GetComponent<IHex>().location = b;
-        grid[p.linkedHexagons[2].y, p.linkedHexagons[2].x].GetComponent<IHex>().location = c;
+            // Hücrelerin hareket edecekleri lokasyonlar atanıyor.
+            Vector2 b = grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x].GetComponent<IHex>().location;
+            Vector2 c = grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x].GetComponent<IHex>().location;
+            Vector2 a = grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x].GetComponent<IHex>().location;
 
-        GameObject[] hex = new GameObject[3];
-        hex[2] = grid[p.linkedHexagons[2].y, p.linkedHexagons[2].x];
-        hex[1] = grid[p.linkedHexagons[1].y, p.linkedHexagons[1].x];
-        hex[0] = grid[p.linkedHexagons[0].y, p.linkedHexagons[0].x];
+            grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x].GetComponent<IHex>().location = a;
+            grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x].GetComponent<IHex>().location = b;
+            grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x].GetComponent<IHex>().location = c;
 
-        grid[p.linkedHexagons[2].y, p.linkedHexagons[2].x] = hex[1];
-        grid[p.linkedHexagons[1].y, p.linkedHexagons[1].x] = hex[0];
-        grid[p.linkedHexagons[0].y, p.linkedHexagons[0].x] = hex[2];
+            // Hücrelerin GridSystem'de kayıtlı yerleri değiştiriliyor
+            GameObject[] hex = new GameObject[3];
+            hex[2] = grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x];
+            hex[1] = grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x];
+            hex[0] = grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x];
+
+            grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x] = hex[0];
+            grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x] = hex[2];
+            grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x] = hex[1];
+
+            // Hücrelerdeki indexler değiştiriliyor.
+            hex[0].GetComponent<IHex>().index = new Vector2Int(pivot.linkedHexagons[2].x, pivot.linkedHexagons[2].y);
+            hex[2].GetComponent<IHex>().index = new Vector2Int(pivot.linkedHexagons[1].x, pivot.linkedHexagons[1].y);
+            hex[1].GetComponent<IHex>().index = new Vector2Int(pivot.linkedHexagons[0].x, pivot.linkedHexagons[0].y);
+
+            yield return new WaitForSeconds(0.2f);
+
+            // Değişen hücreler için eşleşmeler kontrol ediliyor.
+            Vector2Int[] checkList = new Vector2Int[] { hex[0].GetComponent<IHex>().index, hex[1].GetComponent<IHex>().index, hex[2].GetComponent<IHex>().index };
+            List<Vector2Int> result = CheckHex(checkList);
+            if (result.Count > 0)
+            {
+                foreach (Vector2Int res in result)
+                {
+                    grid[res.y, res.x].GetComponent<IHex>().Break();
+                }
+
+                StartCoroutine(FillHexDelayed());
+                break;
+            }
+
+        }
+    }
+
+    public IEnumerator TurnRight()
+    {
+
+        for (int i = 0; i <= 2; i++)
+        {
+            Pivot pivot = activePivot.GetComponent<Pivot>();
+
+            Vector2 c = grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x].GetComponent<IHex>().location;
+            Vector2 a = grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x].GetComponent<IHex>().location;
+            Vector2 b = grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x].GetComponent<IHex>().location;
+
+            grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x].GetComponent<IHex>().location = a;
+            grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x].GetComponent<IHex>().location = b;
+            grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x].GetComponent<IHex>().location = c;
+
+            GameObject[] hex = new GameObject[3];
+            hex[2] = grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x];
+            hex[1] = grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x];
+            hex[0] = grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x];
+
+            grid[pivot.linkedHexagons[2].y, pivot.linkedHexagons[2].x] = hex[1];
+            grid[pivot.linkedHexagons[1].y, pivot.linkedHexagons[1].x] = hex[0];
+            grid[pivot.linkedHexagons[0].y, pivot.linkedHexagons[0].x] = hex[2];
+
+            yield return new WaitForSeconds(0.2f);
+
+            // Değişen hücreler için eşleşmeler kontrol ediliyor.
+            Vector2Int[] checkList = new Vector2Int[] { hex[0].GetComponent<IHex>().index, hex[1].GetComponent<IHex>().index, hex[2].GetComponent<IHex>().index };
+            List<Vector2Int> result = CheckHex(checkList);
+            if (result.Count > 0)
+            {
+                foreach (Vector2Int res in result)
+                {
+                    grid[res.y, res.x].GetComponent<IHex>().Break();
+                }
+
+                StartCoroutine(FillHexDelayed());
+                break;
+            }
+        }
     }
 
     IEnumerator FillHexDelayed()
@@ -134,14 +262,14 @@ public class GridSystem : MonoBehaviour
         {
             for (int x = 0; x < XTile; x++)
             {
-                if (grid[y, x] == null)
+                if (grid[y, x] == null) // Hücre alanı boşsa dolduruyoruz.
                 {
-                    yield return new WaitForSeconds(0.005f * x); // Kısa süreli gecikmelerle taşları sahneye çağrıyoruz.
+                    yield return new WaitForSeconds(0.005f * x); // Kısa süreli gecikmelerle hücreleri sahneye çağrıyoruz.
                     GameObject hex = Instantiate(HexSample); // Hücre sahneye çağrılıyor.
                     grid[y, x] = hex; // Hücre Array'ımıza ekleniyor.
                     hex.transform.position = ConvertToHexPos(x, 15 + y); // Koordinatlar altıgen sıralamaya göre dönüştürülerek hücre konumlandırılıyor.
                     int randomColor = Random.Range(0, GetComponent<Core>().colors.Count); // Core'dan alınmak üzere rastgele renk kodu belirleniyor.
-                    hex.GetComponent<IHex>().Create(randomColor, ConvertToHexPos(x, y)); // Hücre yaratım metodu çağrılıyor.
+                    hex.GetComponent<IHex>().Create(false, randomColor, ConvertToHexPos(x, y), new Vector2Int(x, y)); // Hücre yaratım metodu çağrılıyor.
                 }
             }
         }
